@@ -123,20 +123,21 @@ uint16_t delta_count[3];
 /* Statics */
  static volatile RTC_C_Calendar newTime;
 
- /* Time is November 12th 1955 10:03:00 PM */
+/* Time is November 12th 1955 10:03:00 PM */
 RTC_C_Calendar currentTime =
- {
-         1,
-         3,
-         10,
-         12,
-         11,
-         00,
-         2018
- };
+{
+     1,
+     3,
+     10,
+     12,
+     11,
+     00,
+     2018
+};
 
 RTC_C_Calendar newtime;
 
+//Used to track user input
 typedef enum time_set{
     HOURS = 0,
     MINUTES,
@@ -144,25 +145,24 @@ typedef enum time_set{
     MONTH
 }time_set_stage;
 
+//Used to track user input for RTC
 typedef struct time_step{
     time_set_stage stage;
     char *prompt;
     int increment_mod;
 }time_step;
 
-
 time_set_stage current_Stage = HOURS;
 
 time_step setup_steps[4] = {
-                            {HOURS,  "Hours:  ",12},
-                            {MINUTES,"Minutes:",59},
-                            {DAY,    "Day:    ",31},
-                            {MONTH,  "Month:  ",12}
+    {HOURS,  "Hours:  ",12},
+    {MINUTES,"Minutes:",59},
+    {DAY,    "Day:    ",31},
+    {MONTH,  "Month:  ",12}
 };
 
+//Global Variables
 int SET_TIME = false;
-
-
 uint16_t value = 0;
 int reset_time = 0;
 int print_count = 0;
@@ -170,39 +170,25 @@ int second_count = 0;
 
 int main(void)
 {
+    //Disable Watchdog
     WDTCTL = WDTPW | WDTHOLD;
 
+    //Setup clock
     clockStartUp();
 
-
-    P2DIR |= BIT0;
-    P2OUT &= ~BIT0;
-    P2DIR |= BIT1;
-    P2OUT &= ~BIT1;
-    P2DIR |= BIT2;
-    P2OUT &= ~BIT2;
-
+    //Enable UART for User interface
     UART_init();
 
-
     /* Config RTC */
-    /* Configuring pins for peripheral/crystal usage and LED for output */
+    /* Configuring pins for peripheral/crystal usage */
     MAP_GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_PJ,
-            GPIO_PIN0 | GPIO_PIN1, GPIO_PRIMARY_MODULE_FUNCTION);
-
-    /* Setting the external clock frequency. This API is optional, but will
-     * come in handy if the user ever wants to use the getMCLK/getACLK/etc
-     * functions
-     */
-    CS_setExternalClockSourceFrequency(32000,48000000);
+        GPIO_PIN0 | GPIO_PIN1, GPIO_PRIMARY_MODULE_FUNCTION);
 
     /* Starting LFXT in non-bypass mode without a timeout. */
     CS_startLFXT(false);
 
-
-
     /* Specify an interrupt to assert every minute */
-   MAP_RTC_C_setCalendarEvent(RTC_C_CALENDAREVENT_MINUTECHANGE);
+    MAP_RTC_C_setCalendarEvent(RTC_C_CALENDAREVENT_MINUTECHANGE);
 
     /* Enable interrupt for RTC Ready Status, which asserts when the RTC
      * Calendar registers are ready to read.
@@ -212,24 +198,15 @@ int main(void)
     MAP_RTC_C_enableInterrupt(
             RTC_C_CLOCK_READ_READY_INTERRUPT | RTC_C_TIME_EVENT_INTERRUPT);
 
-
-
     //initalize baseline measurement
     TI_CAPT_Init_Baseline(&my_keys);
 
     //update baseline measurement (average 30 measurements)
     TI_CAPT_Update_Baseline(&my_keys, 30);
 
-    //LCD_init();
     sysTickInit();
-    //ST7735_DrawString2(0,5,"HH:MM",ST7735_YELLOW,ST7735_BLACK);
-    //ST7735_DrawString2(100,5,"MM/DD",ST7735_YELLOW,ST7735_BLACK);
 
-    //ST7735_DrawString2(30,35,"Clock Init:",ST7735_YELLOW,ST7735_BLACK);
-   // ST7735_DrawString2(30,65,"Hours:",ST7735_YELLOW,ST7735_BLACK);
     printf("Clock Init:");
-
-
 
     /* Enable interrupts and go to sleep. */
     MAP_Interrupt_enableInterrupt(INT_RTC_C);
@@ -243,30 +220,21 @@ int main(void)
 
 
         while(!SET_TIME){
-
             SysTick_delay(20);
             //Inquire if a button has been pressed
             const struct Element *tmp = TI_CAPT_Buttons(&my_keys);
-            //sprintf(str_val,"%02.0d",value);
+
             if(print_count == 0){
                 printf("\n\r%s\n",setup_steps[current_Stage].prompt);
                 print_count++;
             }
             printf("\b\b  \b\b%02.0d",value);
-            //ST7735_DrawString2(30,65,setup_steps[current_Stage].prompt,ST7735_YELLOW,ST7735_BLACK);
-            //ST7735_DrawString2(50,80,str_val,ST7735_YELLOW,ST7735_BLACK);
+
             //Determine if a button has been pressed
             if(&select_element == tmp)
             {
                 print_count = 0;
 
-                //Turn on only Red LED
-                P2OUT |= BIT0;
-                P2OUT &= ~BIT2;
-                P2OUT &= ~BIT1;
-
-                //format input of int to BCD
-                //uint16_t temp = RTC_C_convertBinaryToBCD(value);
                 uint16_t temp = value;
                 //store setting in RTC struct
                 switch(current_Stage){
@@ -295,50 +263,36 @@ int main(void)
 
                 value = 0;
                 SysTick_delay(100);
-                while(TI_CAPT_Buttons(&my_keys) == &select_element){
-                                    ;
-                                }
-            }else if(&down_element == tmp){
-                //Turn on only Blue LED
-                P2OUT |= BIT2;
-                P2OUT &= ~BIT0;
-                P2OUT &= ~BIT1;
 
+                //Wait for Button release
+                while(TI_CAPT_Buttons(&my_keys) == &select_element){
+                        ;
+                }
+            }else if(&down_element == tmp){
                 SysTick_delay(1);
 
                 if(value==0){
                     //if positive, decrement is allowed
                     value = setup_steps[current_Stage].increment_mod;
-
                 }else{
                     value--;
                 }
-                //SysTick_delay(100);
 
+                //Wait for Button Release
                 while(TI_CAPT_Buttons(&my_keys) == &down_element){
                     ;
                 }
 
             }else if(&up_element == tmp){
-                //Turn on only Green LED
-                P2OUT |= BIT1;
-                P2OUT &= ~BIT2;
-                P2OUT &= ~BIT0;
-
                 SysTick_delay(1);
                 value = (value + 1) % setup_steps[current_Stage].increment_mod;
 
-                //SysTick_delay(100);
-
+                //Wait for Button Release
                 while(TI_CAPT_Buttons(&my_keys) == &up_element){
                     ;
                 }
             }else{
-                //Turn all three off
-                P2OUT &= ~BIT1;
-                P2OUT &= ~BIT2;
-                P2OUT &= ~BIT0;
-                SysTick_delay(100);
+                SysTick_delay(10);
             }
         }
 
@@ -346,54 +300,38 @@ int main(void)
             SET_TIME=false;
             /* Initializing RTC with current time as described in time in
              * definitions section */
-            //MAP_RTC_C_initCalendar(&currentTime, RTC_C_FORMAT_BCD);
             MAP_RTC_C_initCalendar(&currentTime, RTC_C_FORMAT_BINARY);
 
             /* Start RTC Clock */
-                MAP_RTC_C_startClock();
+            MAP_RTC_C_startClock();
 
-           printf("\nTime Set\n\r");
-           char data[10];
-                while(1){
-                    if(second_count==15){
-                        newtime = MAP_RTC_C_getCalendarTime();
-                        //updateTimeDisplay(&newtime);
-                        //sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0d",newtime.hours,newtime.minutes,newtime.month,newtime.dayOfmonth);
-                        /*sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0h",
-                                RTC_C_convertBCDToBinary(newtime.hours),
-                                RTC_C_convertBCDToBinary(newtime.minutes),
-                                RTC_C_convertBCDToBinary(newtime.month),
-                                RTC_C_convertBCDToBinary(newtime.dayOfmonth));
-                        printf("Time:%s\n\r",data);*/
-                        sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0d",
-                                                        newtime.hours,
-                                                        newtime.minutes,
-                                                        newtime.month,
-                                                        newtime.dayOfmonth);
-                        printf("Current Time: %s\n\r",data);
-                        second_count = 0;
-                    }
-                    if(reset_time){
+            printf("\nTime Set\n\r");
+            char data[10];
+            while(1){
+                if(second_count==15){
+                    newtime = MAP_RTC_C_getCalendarTime();
+                    sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0d",
+                                newtime.hours,
+                                newtime.minutes,
+                                newtime.month,
+                                newtime.dayOfmonth);
+                    printf("Current Time: %s\n\r",data);
+                    second_count = 0;
+                }
+                if(reset_time){
 
-                        reset_time = 0;
-                        newtime = MAP_RTC_C_getCalendarTime();
-                        //updateTimeDisplay(&newtime);
-                        //sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0d",newtime.hours,newtime.minutes,newtime.month,newtime.dayOfmonth);
-                        /*sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0d",
-                                RTC_C_convertBCDToBinary(newtime.hours),
-                                RTC_C_convertBCDToBinary(newtime.minutes),
-                                RTC_C_convertBCDToBinary(newtime.month),
-                                RTC_C_convertBCDToBinary(newtime.dayOfmonth));*/
-                        sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0d",
-                                                                                newtime.hours,
-                                                                                newtime.minutes,
-                                                                                newtime.month,
-                                                                                newtime.dayOfmonth);
-                        printf("One Minute Passed. Time: \n\r%s\n\r",data);
-                    }
+                    reset_time = 0;
+                    newtime = MAP_RTC_C_getCalendarTime();
+                    sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0d",
+                                newtime.hours,
+                                newtime.minutes,
+                                newtime.month,
+                                newtime.dayOfmonth);
+                    printf("One Minute Passed. Time: \n\r%s\n\r",data);
+                }
+            }
         }
     }
-}
 }
 
 /* RTC ISR */
