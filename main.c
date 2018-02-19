@@ -242,7 +242,6 @@ int main(void)
         TI_CAPT_Raw(&my_keys, raw_count);
 
 
-        char str_val[2];
         while(!SET_TIME){
 
             SysTick_delay(20);
