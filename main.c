@@ -126,13 +126,13 @@ uint16_t delta_count[3];
  /* Time is November 12th 1955 10:03:00 PM */
 RTC_C_Calendar currentTime =
  {
-         0x01,
-         0x03,
-         0x10,
-         0x12,
-         0x11,
-         0x00,
-         0x2018
+         1,
+         3,
+         10,
+         12,
+         11,
+         00,
+         2018
  };
 
 RTC_C_Calendar newtime;
@@ -266,7 +266,8 @@ int main(void)
                 P2OUT &= ~BIT1;
 
                 //format input of int to BCD
-                uint16_t temp = RTC_C_convertBinaryToBCD(value);
+                //uint16_t temp = RTC_C_convertBinaryToBCD(value);
+                uint16_t temp = value;
                 //store setting in RTC struct
                 switch(current_Stage){
                     case HOURS:
@@ -345,7 +346,8 @@ int main(void)
             SET_TIME=false;
             /* Initializing RTC with current time as described in time in
              * definitions section */
-            MAP_RTC_C_initCalendar(&currentTime, RTC_C_FORMAT_BCD);
+            //MAP_RTC_C_initCalendar(&currentTime, RTC_C_FORMAT_BCD);
+            MAP_RTC_C_initCalendar(&currentTime, RTC_C_FORMAT_BINARY);
 
             /* Start RTC Clock */
                 MAP_RTC_C_startClock();
@@ -357,12 +359,18 @@ int main(void)
                         newtime = MAP_RTC_C_getCalendarTime();
                         //updateTimeDisplay(&newtime);
                         //sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0d",newtime.hours,newtime.minutes,newtime.month,newtime.dayOfmonth);
-                        sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0d",
+                        /*sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0h",
                                 RTC_C_convertBCDToBinary(newtime.hours),
                                 RTC_C_convertBCDToBinary(newtime.minutes),
                                 RTC_C_convertBCDToBinary(newtime.month),
                                 RTC_C_convertBCDToBinary(newtime.dayOfmonth));
-                        printf("Time:%s\n\r",data);
+                        printf("Time:%s\n\r",data);*/
+                        sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0d",
+                                                        newtime.hours,
+                                                        newtime.minutes,
+                                                        newtime.month,
+                                                        newtime.dayOfmonth);
+                        printf("Current Time: %s\n\r",data);
                         second_count = 0;
                     }
                     if(reset_time){
@@ -371,12 +379,17 @@ int main(void)
                         newtime = MAP_RTC_C_getCalendarTime();
                         //updateTimeDisplay(&newtime);
                         //sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0d",newtime.hours,newtime.minutes,newtime.month,newtime.dayOfmonth);
-                        sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0d",
+                        /*sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0d",
                                 RTC_C_convertBCDToBinary(newtime.hours),
                                 RTC_C_convertBCDToBinary(newtime.minutes),
                                 RTC_C_convertBCDToBinary(newtime.month),
-                                RTC_C_convertBCDToBinary(newtime.dayOfmonth));
-                        printf("One Minute Passed. Time:\n\r%s\n\r",data);
+                                RTC_C_convertBCDToBinary(newtime.dayOfmonth));*/
+                        sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0d",
+                                                                                newtime.hours,
+                                                                                newtime.minutes,
+                                                                                newtime.month,
+                                                                                newtime.dayOfmonth);
+                        printf("One Minute Passed. Time: \n\r%s\n\r",data);
                     }
         }
     }
