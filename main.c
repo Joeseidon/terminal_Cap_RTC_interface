@@ -133,7 +133,8 @@ typedef enum time_set{
     HOURS = 0,
     MINUTES,
     DAY,
-    MONTH
+    MONTH,
+    YEAR
 }time_set_stage;
 
 //Used to track user input for RTC
@@ -145,11 +146,12 @@ typedef struct time_step{
 
 time_set_stage current_Stage = HOURS;
 
-time_step setup_steps[4] = {
-    {HOURS,  "Hours:  ",13},
-    {MINUTES,"Minutes:",60},
-    {DAY,    "Day:    ",32},
-    {MONTH,  "Month:  ",13}
+time_step setup_steps[5] = {
+    {HOURS,  "Hours:    ",13},
+    {MINUTES,"Minutes:  ",60},
+    {DAY,    "Day:      ",32},
+    {MONTH,  "Month:    ",13},
+    {YEAR,   "Year: 20XX",100}
 };
 
 //Global Variables
@@ -246,9 +248,15 @@ int main(void)
 
                     case MONTH:
                         currentTime.month = temp;
-                        current_Stage = HOURS;
+                        current_Stage = YEAR;
+                        //SET_TIME=1;//break loop
+                        break;
+                    case YEAR:
+                        currentTime.year = (2000+temp);
+                        current_Stage = MINUTES;
                         SET_TIME=1;//break loop
                         break;
+
                 }
                 SysTick_delay(1);
 
@@ -297,15 +305,27 @@ int main(void)
             MAP_RTC_C_startClock();
 
             printf("\nTime Set\n\r");
-            char data[10];
+            char data[20];
+            newtime = MAP_RTC_C_getCalendarTime();
+            sprintf(data,"%02.0d:%02.0d:%02.0d    %02.0d/%02.0d/%02.0d",
+                        newtime.hours,
+                        newtime.minutes,
+                        newtime.seconds,
+                        newtime.month,
+                        newtime.dayOfmonth,
+                        newtime.year);
+            printf("Current Time: %s\n\r",data);
+
             while(1){
-                if(second_count==15){
+                if(second_count==5){
                     newtime = MAP_RTC_C_getCalendarTime();
-                    sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0d",
+                    sprintf(data,"%02.0d:%02.0d:%02.0d    %02.0d/%02.0d/%02.0d",
                                 newtime.hours,
                                 newtime.minutes,
+                                newtime.seconds,
                                 newtime.month,
-                                newtime.dayOfmonth);
+                                newtime.dayOfmonth,
+                                newtime.year);
                     printf("Current Time: %s\n\r",data);
                     second_count = 0;
                 }
@@ -313,11 +333,13 @@ int main(void)
 
                     reset_time = 0;
                     newtime = MAP_RTC_C_getCalendarTime();
-                    sprintf(data,"%02.0d:%02.0d    %02.0d/%02.0d",
+                    sprintf(data,"%02.0d:%02.0d:%02.0d    %02.0d/%02.0d/%02.0d",
                                 newtime.hours,
                                 newtime.minutes,
+                                newtime.seconds,
                                 newtime.month,
-                                newtime.dayOfmonth);
+                                newtime.dayOfmonth,
+                                newtime.year);
                     printf("One Minute Passed. Time: \n\r%s\n\r",data);
                 }
             }
