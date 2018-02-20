@@ -1,7 +1,7 @@
 ******************************************************************************
                   TI ARM Linker PC v16.9.6                     
 ******************************************************************************
->> Linked Mon Feb 19 16:32:20 2018
+>> Linked Tue Feb 20 12:02:59 2018
 
 OUTPUT FILE NAME:   <Terminal_RTC_set_With_SD.out>
 ENTRY POINT SYMBOL: "_c_int00"  address: 00003561

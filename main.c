@@ -35,27 +35,18 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * --/COPYRIGHT--*/
 /******************************************************************************
- * MSP432 Empty Project
+ * MSP432 Terminal and Capacitive Touch Set RTC
  *
- * Description: An empty project that uses DriverLib
- *
- *                MSP432P401
- *             ------------------
- *         /|\|                  |
- *          | |                  |
- *          --|RST               |
- *            |                  |
- *            |                  |
- *            |                  |
- *            |                  |
- *            |                  |
- * Author: 
+ * Description: This program uses a combination of UART communication and
+ *  capacitive touch to set the MSP432 on-board RTC. Once the time has been set,
+ *  this program will print out the time every 15 seconds.
+ * Author: Joseph Cutino
 *******************************************************************************/
 
 
 /* NOTE */
 
-//IF this code is used in another program, make sure you import the startup_msp432p401r_css.c file
+//IF this code is used in another program, make sure you import the changes to the startup_msp432p401r_css.c file
 
 
 /* DriverLib Includes */
@@ -155,10 +146,10 @@ typedef struct time_step{
 time_set_stage current_Stage = HOURS;
 
 time_step setup_steps[4] = {
-    {HOURS,  "Hours:  ",12},
-    {MINUTES,"Minutes:",59},
-    {DAY,    "Day:    ",31},
-    {MONTH,  "Month:  ",12}
+    {HOURS,  "Hours:  ",13},
+    {MINUTES,"Minutes:",60},
+    {DAY,    "Day:    ",32},
+    {MONTH,  "Month:  ",13}
 };
 
 //Global Variables
@@ -273,7 +264,7 @@ int main(void)
 
                 if(value==0){
                     //if positive, decrement is allowed
-                    value = setup_steps[current_Stage].increment_mod;
+                    value = setup_steps[current_Stage].increment_mod - 1;
                 }else{
                     value--;
                 }
